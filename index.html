@@ -1864,7 +1864,6 @@ const GIFT_IDEAS = {
       "Watch",
       "Sunglasses",
       "Perfume",
-      "Body Mist",
       "Gadgets",
       "Keychain",
       "Books",
@@ -1908,6 +1907,35 @@ const GIFT_IDEAS = {
   }
 
 };
+
+/* -------------------------------------------------------
+   GIFT IDEAS EMOJI OVERRIDES
+------------------------------------------------------- */
+
+function getGiftEmoji(item, recipient){
+
+  const value = normalizeEmojiText(item);
+
+  if(value === "cap") return "🧢";
+  if(value === "keychain") return "🔗";
+  if(value === "mug") return "☕";
+  if(value === "hot wheels") return "🚗";
+  if(value === "eyeliner") return "👁️";
+  if(value === "face mask") return "👧";
+  if(value === "toys") return "🧸";
+  if(value === "mascara") return "👀";
+  if(value === "lamp") return "🛋️";
+  if(value === "polaroids") return "🎞️";
+  if(value === "journal") return "📓";
+  if(value === "ring album") return "🏞️";
+  if(value === "hair accessories") return "🎀";
+
+  if(value === "dress" && (recipient === "boy" || recipient === "him")){
+    return "👖";
+  }
+
+  return getEmoji(item);
+}
 
 function showTab(tab){
 
@@ -2020,7 +2048,7 @@ function updateGiftIdeas(){
 
   message +=
     ideas
-      .map(item=>`${getEmoji(item)} ${item}`)
+      .map(item=>`${getGiftEmoji(item, recipient)} ${item}`)
       .join("\n");
 
   document.getElementById("giftList")
