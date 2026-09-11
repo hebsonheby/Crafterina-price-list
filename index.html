@@ -345,6 +345,111 @@ input::placeholder{color:#A2A69A}
     grid-template-columns:minmax(0,1fr) 58px 78px 34px
   }
 }
+
+/* -------------------------------------------------------
+   TAB NAVIGATION + GIFT IDEAS
+------------------------------------------------------- */
+
+.tab-nav{
+  width:min(1120px,100%);
+  margin:18px auto 0;
+  padding:0 16px;
+  display:flex;
+  gap:12px
+}
+.tab-btn{
+  flex:1;
+  border:0;
+  border-radius:12px;
+  background:#E8EBE1;
+  color:var(--sage-deep);
+  padding:17px 12px;
+  min-height:64px;
+  cursor:pointer;
+  font-size:19px;
+  font-weight:800;
+  box-shadow:var(--shadow)
+}
+.tab-btn.active{
+  background:var(--sage-dark);
+  color:#fff
+}
+.tab-view{display:none}
+.tab-view.active{display:block}
+
+.gift-ideas-card{
+  width:min(1120px,100%);
+  margin:24px auto 40px;
+  padding:22px;
+  background:var(--white);
+  border:1px solid rgba(222,227,212,.7);
+  border-radius:16px;
+  box-shadow:var(--shadow)
+}
+.gift-selects{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px
+}
+.gift-select{
+  width:100%;
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:var(--cream-light);
+  color:var(--text);
+  padding:12px 11px;
+  outline:none
+}
+.gift-list-box{
+  margin-top:18px;
+  width:100%;
+  min-height:360px;
+  padding:17px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#F4F5EF;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  font-size:14px;
+  line-height:1.7
+}
+.gift-copy-btn{
+  width:100%;
+  margin-top:12px;
+  border:0;
+  border-radius:10px;
+  background:var(--sage-dark);
+  color:#fff;
+  padding:13px;
+  cursor:pointer;
+  font-size:15px;
+  font-weight:750
+}
+.gift-copy-btn:hover{background:var(--sage-deep)}
+
+@media(max-width:560px){
+  .tab-nav{
+    padding:0 11px;
+    gap:8px
+  }
+  .tab-btn{
+    min-height:60px;
+    font-size:17px;
+    padding:15px 8px
+  }
+  .gift-ideas-card{
+    margin:15px auto 30px;
+    padding:16px;
+    border-radius:14px
+  }
+  .gift-selects{
+    grid-template-columns:1fr
+  }
+  .gift-list-box{
+    min-height:300px;
+    font-size:13px
+  }
+}
 </style>
 </head>
 
@@ -365,6 +470,13 @@ input::placeholder{color:#A2A69A}
 
   <button class="reset-btn" type="button" onclick="resetApp()">Reset</button>
 </header>
+
+<nav class="tab-nav" aria-label="Main tabs">
+  <button id="priceTab" class="tab-btn active" type="button" onclick="showTab('priceList')">💰 Price List</button>
+  <button id="giftTab" class="tab-btn" type="button" onclick="showTab('giftIdeas')">🎁 Gift Ideas</button>
+</nav>
+
+<div id="priceListView" class="tab-view active">
 
 <main class="container">
 
@@ -417,6 +529,55 @@ input::placeholder{color:#A2A69A}
 </section>
 
 </main>
+</div>
+
+<section id="giftIdeasView" class="tab-view">
+
+  <div class="gift-ideas-card">
+
+    <div class="card-title">🎁 Gift Ideas</div>
+
+    <div class="gift-selects">
+
+      <div>
+        <label for="giftOccasion">Occasion</label>
+
+        <select
+          id="giftOccasion"
+          class="gift-select"
+          onchange="updateGiftRecipientOptions()"
+        >
+          <option value="birthday">Birthday</option>
+          <option value="wedding">Wedding Anniversary</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="giftRecipient">Who is it for?</label>
+
+        <select
+          id="giftRecipient"
+          class="gift-select"
+          onchange="updateGiftIdeas()"
+        ></select>
+      </div>
+
+    </div>
+
+    <div id="giftList" class="gift-list-box"></div>
+
+    <button
+      id="giftCopyBtn"
+      class="gift-copy-btn"
+      type="button"
+      onclick="copyGiftIdeas()"
+    >
+      📋 Copy List
+    </button>
+
+  </div>
+
+</section>
 
 <script>
 
@@ -1497,16 +1658,6 @@ function updatePreview(){
 
       if(item.chocolate){
 
-        /*
-          No "Chocolates —" label.
-
-          Confirmed:
-          🍫 Dairy Milk × 10 — ₹100
-
-          Pending:
-          *🍫 Dairy Milk × 10 — Pending*
-        */
-
         let line=`🍫`;
 
         if(item.brand){
@@ -1643,6 +1794,284 @@ async function copyPreview(){
 }
 
 /* -------------------------------------------------------
+   GIFT IDEAS
+------------------------------------------------------- */
+
+const GIFT_IDEAS = {
+
+  wedding: {
+
+    him: [
+      "Dress",
+      "Perfume",
+      "Chocolates",
+      "Watch",
+      "Photo Frames",
+      "Wish Card",
+      "Belt",
+      "Cap",
+      "Car Accessories",
+      "Office Stationery"
+    ],
+
+    her: [
+      "Dress",
+      "Footwear",
+      "Jewellery",
+      "Perfume",
+      "Chocolates",
+      "Photo Frames",
+      "Cosmetics",
+      "Period Massager",
+      "Wish Cards"
+    ]
+
+  },
+
+  birthday: {
+
+    boy: [
+      "Frames",
+      "Lamp",
+      "Stationery Gift",
+      "Toys",
+      "Watch",
+      "Chocolate",
+      "Ring",
+      "Ring Album",
+      "Keychain",
+      "School Stationery",
+      "Dress"
+    ],
+
+    girl: [
+      "Frames",
+      "Light Toy / Lamp",
+      "Soft Toy",
+      "Cards",
+      "Stationery Gift",
+      "Cosmetics",
+      "Chocolates",
+      "Ring",
+      "Ring Album",
+      "Hair Accessories",
+      "Keychain",
+      "School Stationery",
+      "Dress"
+    ],
+
+    him: [
+      "Watch",
+      "Sunglasses",
+      "Perfume",
+      "Body Mist",
+      "Gadgets",
+      "Keychain",
+      "Books",
+      "Mug",
+      "Water Bottle",
+      "Polaroids",
+      "Photo Frame",
+      "Dress",
+      "Wallet Set",
+      "Cap",
+      "Wish Card",
+      "Chocolates",
+      "Hot Wheels",
+      "Ring"
+    ],
+
+    her: [
+      "Dress",
+      "Chocolates",
+      "Lipstick",
+      "Eyeliner",
+      "Perfume",
+      "Face Mask",
+      "Lip Balm",
+      "Jewellery",
+      "Hair Accessories",
+      "Keychain",
+      "Books",
+      "Mug",
+      "Water Bottle",
+      "Journal",
+      "Mascara",
+      "Lamp",
+      "Polaroids",
+      "Photo Frames",
+      "Toys",
+      "Wish Cards",
+      "Ring"
+    ]
+
+  }
+
+};
+
+function showTab(tab){
+
+  const priceView =
+    document.getElementById("priceListView");
+
+  const giftView =
+    document.getElementById("giftIdeasView");
+
+  const priceTab =
+    document.getElementById("priceTab");
+
+  const giftTab =
+    document.getElementById("giftTab");
+
+  const showPrice =
+    tab === "priceList";
+
+  priceView.classList.toggle(
+    "active",
+    showPrice
+  );
+
+  giftView.classList.toggle(
+    "active",
+    !showPrice
+  );
+
+  priceTab.classList.toggle(
+    "active",
+    showPrice
+  );
+
+  giftTab.classList.toggle(
+    "active",
+    !showPrice
+  );
+}
+
+function updateGiftRecipientOptions(){
+
+  const occasion =
+    document.getElementById("giftOccasion").value;
+
+  const recipient =
+    document.getElementById("giftRecipient");
+
+  const previous =
+    recipient.value;
+
+  if(occasion === "wedding"){
+
+    recipient.innerHTML=`
+      <option value="him">👨 Him</option>
+      <option value="her">👩 Her</option>
+    `;
+
+  }else{
+
+    recipient.innerHTML=`
+      <option value="him">👨 Him</option>
+      <option value="her">👩 Her</option>
+      <option value="boy">👦 Boy</option>
+      <option value="girl">👧 Girl</option>
+    `;
+
+  }
+
+  if(
+    [...recipient.options]
+      .some(option=>option.value===previous)
+  ){
+
+    recipient.value=previous;
+
+  }
+
+  updateGiftIdeas();
+}
+
+function updateGiftIdeas(){
+
+  const occasion =
+    document.getElementById("giftOccasion").value;
+
+  const recipient =
+    document.getElementById("giftRecipient").value;
+
+  const recipientLabel =
+    recipient === "him"
+      ? "Him"
+      : recipient === "her"
+        ? "Her"
+        : recipient === "boy"
+          ? "Boy"
+          : "Girl";
+
+  const occasionLabel =
+    occasion === "wedding"
+      ? "Wedding Anniversary"
+      : "Birthday";
+
+  const ideas =
+    (GIFT_IDEAS[occasion] &&
+     GIFT_IDEAS[occasion][recipient])
+      || [];
+
+  let message =
+    `🎁 *${occasionLabel} Gift Ideas – For ${recipientLabel}*\n\n`;
+
+  message +=
+    ideas
+      .map(item=>`${getEmoji(item)} ${item}`)
+      .join("\n");
+
+  document.getElementById("giftList")
+    .textContent=message;
+}
+
+async function copyGiftIdeas(){
+
+  const text =
+    document
+      .getElementById("giftList")
+      .textContent;
+
+  try{
+
+    await navigator.clipboard.writeText(text);
+
+  }catch(error){
+
+    const temp =
+      document.createElement("textarea");
+
+    temp.value=text;
+    temp.style.position="fixed";
+    temp.style.opacity="0";
+
+    document.body.appendChild(temp);
+
+    temp.select();
+
+    document.execCommand("copy");
+
+    temp.remove();
+
+  }
+
+  const button =
+    document.getElementById("giftCopyBtn");
+
+  const original =
+    button.textContent;
+
+  button.textContent="✓ Copied!";
+
+  setTimeout(
+    ()=>button.textContent=original,
+    1500
+  );
+}
+
+/* -------------------------------------------------------
    RESET
 ------------------------------------------------------- */
 
@@ -1672,6 +2101,7 @@ defaultItems.forEach(item=>{
 });
 
 updatePreview();
+updateGiftRecipientOptions();
 
 </script>
 
