@@ -222,6 +222,37 @@ input::placeholder{color:#A2A69A}
 .add-chocolate-btn:hover,.add-btn:hover{
   background:#EEF2E8
 }
+
+/* PHOTO FRAME SUBMENU */
+.photo-frame-submenu{
+  margin-top:10px;
+  padding:12px;
+  background:#EEF1E7;
+  border:1px solid #E0E5D7;
+  border-radius:10px
+}
+.photo-frame-subtitle{
+  color:var(--sage-deep);
+  font-size:11px;
+  font-weight:750;
+  margin-bottom:9px;
+  text-transform:uppercase;
+  letter-spacing:.3px
+}
+.photo-frame-entry{
+  margin-bottom:9px
+}
+.photo-frame-entry:last-child{
+  margin-bottom:0
+}
+.photo-frame-fields{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 105px;
+  gap:8px;
+  align-items:end
+}
+.photo-frame-price-input{text-align:right}
+
 .delivery-section{margin-top:22px}
 .delivery-row{
   display:grid;
@@ -280,6 +311,70 @@ input::placeholder{color:#A2A69A}
 }
 .copy-btn:hover{background:var(--sage-deep)}
 
+/* SAVE / LOAD */
+.save-list-controls{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:8px;
+  margin-top:12px
+}
+.save-btn{
+  border:0;
+  border-radius:10px;
+  background:var(--sage-dark);
+  color:#fff;
+  padding:12px 18px;
+  cursor:pointer;
+  font-size:14px;
+  font-weight:750
+}
+.save-btn:hover{background:var(--sage-deep)}
+.saved-lists{
+  margin-top:14px
+}
+.saved-list-item{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 36px;
+  gap:8px;
+  align-items:center;
+  margin-bottom:8px
+}
+.saved-load-btn{
+  width:100%;
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:var(--cream-light);
+  color:var(--text);
+  padding:10px 11px;
+  text-align:left;
+  cursor:pointer;
+  font-weight:650
+}
+.saved-load-btn:hover{
+  background:#EEF2E8;
+  border-color:var(--sage-dark)
+}
+.saved-delete-btn{
+  width:36px;
+  height:38px;
+  border:0;
+  border-radius:8px;
+  background:#F0F1ED;
+  color:#8A8F82;
+  cursor:pointer;
+  font-size:20px;
+  line-height:1
+}
+.saved-delete-btn:hover{
+  background:#F3E8E6;
+  color:var(--danger)
+}
+.saved-empty{
+  color:var(--text-light);
+  font-size:12px;
+  padding:5px 0
+}
+
 @media(max-width:820px){
   .container{grid-template-columns:1fr}
 }
@@ -319,6 +414,10 @@ input::placeholder{color:#A2A69A}
     grid-template-columns:minmax(0,1fr) 65px 88px 35px;
     gap:6px
   }
+  .photo-frame-fields{
+    grid-template-columns:minmax(0,1fr) 88px;
+    gap:6px
+  }
   .delivery-row{
     grid-template-columns:minmax(0,1fr) 90px;
     gap:8px
@@ -327,6 +426,9 @@ input::placeholder{color:#A2A69A}
   .preview-box{
     min-height:300px;
     font-size:13px
+  }
+  .save-list-controls{
+    grid-template-columns:1fr;
   }
 }
 
@@ -343,6 +445,9 @@ input::placeholder{color:#A2A69A}
   }
   .chocolate-fields{
     grid-template-columns:minmax(0,1fr) 58px 78px 34px
+  }
+  .photo-frame-fields{
+    grid-template-columns:minmax(0,1fr) 78px
   }
 }
 
@@ -511,6 +616,27 @@ input::placeholder{color:#A2A69A}
       oninput="updatePreview()"
     >
   </div>
+
+  <div class="section-title">Save Price List</div>
+
+  <div class="save-list-controls">
+    <input
+      id="saveListName"
+      type="text"
+      placeholder="Name this price list"
+    >
+
+    <button
+      class="save-btn"
+      type="button"
+      onclick="savePriceList()"
+    >
+      💾 Save
+    </button>
+  </div>
+
+  <div id="savedLists" class="saved-lists"></div>
+
 </section>
 
 <section class="card">
@@ -592,8 +718,16 @@ const FIXED_PREPARATION_TOTAL =
   PREPARATION_CHARGES.reduce((sum,charge)=>sum+charge.amount,0);
 
 const defaultItems = [
-  {name:"Mini Photo Frame",price:""},
-  {name:"Box",price:""},
+  {
+    name:"Photo Frame",
+    photoFrame:true,
+    frames:{
+      a4:"",
+      a5:"",
+      mini:""
+    }
+  },
+  {name:"Gift Box",price:""},
   {
     name:"Chocolates",
     chocolate:true,
@@ -601,12 +735,12 @@ const defaultItems = [
       {brand:"",qty:1,unitPrice:""}
     ]
   },
-  {name:"Nail Polish",price:""},
   {name:"Flowers",price:""},
   {name:"Wish Card",price:""}
 ];
 
 let itemCounter = 0;
+let currentSavedListId = null;
 
 /* -------------------------------------------------------
    HTML SAFETY
@@ -623,12 +757,10 @@ function escapeHtml(value){
 
 /* -------------------------------------------------------
    EMOJI ENGINE
-   Unicode 17 + broad keyword/synonym matching
 ------------------------------------------------------- */
 
 const EMOJI_RULES = [
 
-  /* Animals */
   ["panda","🐼"],
   ["koala","🐨"],
   ["dog","🐶"],
@@ -690,7 +822,6 @@ const EMOJI_RULES = [
   ["kangaroo","🦘"],
   ["panda bear","🐼"],
 
-  /* Food */
   ["apple","🍎"],
   ["pear","🍐"],
   ["orange","🍊"],
@@ -759,7 +890,6 @@ const EMOJI_RULES = [
   ["wine","🍷"],
   ["cake","🍰"],
 
-  /* Flowers / plants */
   ["flower","🌸"],
   ["flowers","🌸"],
   ["rose","🌹"],
@@ -780,7 +910,6 @@ const EMOJI_RULES = [
   ["herb","🌿"],
   ["grass","🌱"],
 
-  /* Beauty / fashion */
   ["ring","💍"],
   ["engagement ring","💍"],
   ["necklace","📿"],
@@ -826,7 +955,6 @@ const EMOJI_RULES = [
   ["spectacles","👓"],
   ["sunglasses","🕶️"],
 
-  /* Technology */
   ["phone","📱"],
   ["mobile","📱"],
   ["mobile phone","📱"],
@@ -852,7 +980,6 @@ const EMOJI_RULES = [
   ["keyboard","⌨️"],
   ["mouse pad","🖱️"],
 
-  /* Gifts / stationery */
   ["box","🎁"],
   ["gift box","🎁"],
   ["gift","🎁"],
@@ -886,7 +1013,6 @@ const EMOJI_RULES = [
   ["picture frame","🖼️"],
   ["frame","🖼️"],
 
-  /* Places / buildings */
   ["house","🏠"],
   ["home","🏠"],
   ["homes","🏠"],
@@ -907,7 +1033,6 @@ const EMOJI_RULES = [
   ["temple","🛕"],
   ["castle","🏰"],
 
-  /* Transport */
   ["car","🚗"],
   ["cars","🚗"],
   ["taxi","🚕"],
@@ -931,7 +1056,6 @@ const EMOJI_RULES = [
   ["package","📦"],
   ["parcel","📦"],
 
-  /* Emotions / occasions */
   ["heart","❤️"],
   ["love","❤️"],
   ["hearts","❤️"],
@@ -949,7 +1073,6 @@ const EMOJI_RULES = [
   ["diya","🪔"],
   ["deepam","🪔"],
 
-  /* Objects */
   ["key","🔑"],
   ["keys","🔑"],
   ["lock","🔒"],
@@ -1329,6 +1452,78 @@ function removeChocolate(button){
 }
 
 /* -------------------------------------------------------
+   PHOTO FRAME SUBMENU
+------------------------------------------------------- */
+
+function createPhotoFrameSubmenu(item={}){
+
+  const frames = item.frames || {};
+
+  return `
+  <div class="photo-frame-submenu">
+
+    <div class="photo-frame-subtitle">
+      Photo Frame Sizes
+    </div>
+
+    <div class="photo-frame-entry">
+      <div class="photo-frame-fields">
+        <div>
+          <div class="field-label">A4 Size</div>
+        </div>
+        <input
+          class="photo-frame-price-input"
+          data-frame-size="a4"
+          type="number"
+          inputmode="decimal"
+          min="0"
+          value="${escapeHtml(frames.a4 ?? "")}"
+          placeholder="Price"
+          oninput="updatePreview()"
+        >
+      </div>
+    </div>
+
+    <div class="photo-frame-entry">
+      <div class="photo-frame-fields">
+        <div>
+          <div class="field-label">A5 Size</div>
+        </div>
+        <input
+          class="photo-frame-price-input"
+          data-frame-size="a5"
+          type="number"
+          inputmode="decimal"
+          min="0"
+          value="${escapeHtml(frames.a5 ?? "")}"
+          placeholder="Price"
+          oninput="updatePreview()"
+        >
+      </div>
+    </div>
+
+    <div class="photo-frame-entry">
+      <div class="photo-frame-fields">
+        <div>
+          <div class="field-label">Mini Frames</div>
+        </div>
+        <input
+          class="photo-frame-price-input"
+          data-frame-size="mini"
+          type="number"
+          inputmode="decimal"
+          min="0"
+          value="${escapeHtml(frames.mini ?? "")}"
+          placeholder="Price"
+          oninput="updatePreview()"
+        >
+      </div>
+    </div>
+
+  </div>`;
+}
+
+/* -------------------------------------------------------
    ITEMS
 ------------------------------------------------------- */
 
@@ -1338,13 +1533,19 @@ function addItem(data=null){
     name:"",
     price:"",
     chocolate:false,
+    photoFrame:false,
     chocolates:[
       {
         brand:"",
         qty:1,
         unitPrice:""
       }
-    ]
+    ],
+    frames:{
+      a4:"",
+      a5:"",
+      mini:""
+    }
   };
 
   const id = itemCounter++;
@@ -1359,6 +1560,12 @@ function addItem(data=null){
     String(item.name || "")
       .toLowerCase()
       .includes("chocolate");
+
+  const isPhotoFrame =
+    item.photoFrame === true ||
+    String(item.name || "")
+      .toLowerCase()
+      .includes("photo frame");
 
   row.innerHTML=`
 
@@ -1381,7 +1588,7 @@ function addItem(data=null){
       </div>
 
       ${
-        isChocolate
+        isChocolate || isPhotoFrame
         ? ""
         : `
           <input
@@ -1408,7 +1615,9 @@ function addItem(data=null){
     ${
       isChocolate
       ? createChocolateSubmenu(item)
-      : ""
+      : isPhotoFrame
+        ? createPhotoFrameSubmenu(item)
+        : ""
     }
 
   `;
@@ -1433,16 +1642,28 @@ function itemChanged(id){
   const name =
     nameInput.value.trim();
 
-  const isChocolate =
-    name.toLowerCase().includes("chocolate");
+  const normalizedName =
+    name.toLowerCase();
 
-  const submenu =
+  const isChocolate =
+    normalizedName.includes("chocolate");
+
+  const isPhotoFrame =
+    normalizedName.includes("photo frame") ||
+    normalizedName.includes("photoframe");
+
+  const chocolateSubmenu =
     row.querySelector(".chocolate-submenu");
+
+  const photoFrameSubmenu =
+    row.querySelector(".photo-frame-submenu");
 
   const main =
     row.querySelector(".item-main");
 
-  if(isChocolate && !submenu){
+  if(isChocolate && !chocolateSubmenu){
+
+    photoFrameSubmenu?.remove();
 
     const price =
       row.querySelector(".price-input")?.value || "";
@@ -1468,34 +1689,56 @@ function itemChanged(id){
     row.querySelector(".price-input")?.remove();
   }
 
-  if(!isChocolate && submenu){
+  else if(isPhotoFrame && !photoFrameSubmenu){
 
-    const unitPrice =
-      row.querySelector(
-        ".unit-price-input"
-      )?.value || "";
+    chocolateSubmenu?.remove();
 
-    submenu.remove();
+    const wrapper =
+      document.createElement("div");
 
-    const priceInput =
-      document.createElement("input");
+    wrapper.innerHTML =
+      createPhotoFrameSubmenu({
+        frames:{
+          a4:"",
+          a5:"",
+          mini:""
+        }
+      });
 
-    priceInput.className="price-input";
-    priceInput.type="number";
-    priceInput.inputMode="decimal";
-    priceInput.min="0";
-    priceInput.value=unitPrice;
-    priceInput.placeholder="Price";
-
-    priceInput.addEventListener(
-      "input",
-      updatePreview
+    row.appendChild(
+      wrapper.firstElementChild
     );
 
-    main.insertBefore(
-      priceInput,
-      row.querySelector(".delete-btn")
-    );
+    row.querySelector(".price-input")?.remove();
+  }
+
+  if(!isChocolate && !isPhotoFrame){
+
+    chocolateSubmenu?.remove();
+    photoFrameSubmenu?.remove();
+
+    if(!row.querySelector(".price-input")){
+
+      const priceInput =
+        document.createElement("input");
+
+      priceInput.className="price-input";
+      priceInput.type="number";
+      priceInput.inputMode="decimal";
+      priceInput.min="0";
+      priceInput.value="";
+      priceInput.placeholder="Price";
+
+      priceInput.addEventListener(
+        "input",
+        updatePreview
+      );
+
+      main.insertBefore(
+        priceInput,
+        row.querySelector(".delete-btn")
+      );
+    }
   }
 
   const emoji =
@@ -1543,12 +1786,15 @@ function getItems(){
 
     if(!name) return;
 
-    const submenu =
+    const chocolateSubmenu =
       row.querySelector(".chocolate-submenu");
 
-    if(submenu){
+    const photoFrameSubmenu =
+      row.querySelector(".photo-frame-submenu");
 
-      submenu
+    if(chocolateSubmenu){
+
+      chocolateSubmenu
         .querySelectorAll(".chocolate-entry")
         .forEach(entry=>{
 
@@ -1589,7 +1835,56 @@ function getItems(){
 
         });
 
-    }else{
+    }
+
+    else if(photoFrameSubmenu){
+
+      const sizes = [
+        {
+          key:"a4",
+          label:"A4 Size"
+        },
+        {
+          key:"a5",
+          label:"A5 Size"
+        },
+        {
+          key:"mini",
+          label:"Mini Frames"
+        }
+      ];
+
+      sizes.forEach(size=>{
+
+        const rawPrice =
+          photoFrameSubmenu
+            .querySelector(
+              `.photo-frame-price-input[data-frame-size="${size.key}"]`
+            )
+            ?.value || "";
+
+        const hasPrice =
+          String(rawPrice).trim() !== "" &&
+          Number(rawPrice) > 0;
+
+        const price =
+          hasPrice ? Number(rawPrice) : 0;
+
+        items.push({
+          name,
+          photoFrame:true,
+          frameSize:size.key,
+          frameLabel:size.label,
+          price,
+          total:price,
+          pricePending:!hasPrice
+        });
+
+      });
+
+    }
+
+    else{
 
       const rawPrice =
         row.querySelector(".price-input")?.value || "";
@@ -1604,6 +1899,7 @@ function getItems(){
       items.push({
         name,
         chocolate:false,
+        photoFrame:false,
         price,
         total:price,
         pricePending:!hasPrice
@@ -1642,7 +1938,8 @@ function updatePreview(){
   let giftItemsTotal=0;
 
   let message =
-    `🎁 *${hamperName}*\n\n`;
+    `🎁 *${hamperName}*\n` +
+    `*ESTIMATED PRICE*\n\n`;
 
   message += `*Gift Items*\n`;
 
@@ -1652,11 +1949,39 @@ function updatePreview(){
 
   }else{
 
+    let previousPhotoFrameSize = null;
+
     items.forEach(item=>{
+
+      /* Blank Photo Frame sizes are omitted from customer preview */
+      if(
+        item.photoFrame &&
+        (
+          item.pricePending ||
+          String(item.price ?? "").trim() === ""
+        )
+      ){
+        return;
+      }
 
       giftItemsTotal += item.total;
 
-      if(item.chocolate){
+      if(item.photoFrame){
+
+        if(item.frameSize !== previousPhotoFrameSize){
+
+          const line =
+            `🖼️ Photo Frame - ${item.frameLabel}`;
+
+          message +=
+            `${line} — ₹${formatMoney(item.total)}\n`;
+
+          previousPhotoFrameSize = item.frameSize;
+        }
+
+      }
+
+      else if(item.chocolate){
 
         let line=`🍫`;
 
@@ -1791,6 +2116,356 @@ async function copyPreview(){
     ()=>button.textContent=original,
     1500
   );
+}
+
+/* -------------------------------------------------------
+   SAVE / LOAD PRICE LISTS
+------------------------------------------------------- */
+
+function getSavedPriceLists(){
+
+  try{
+
+    return JSON.parse(
+      localStorage.getItem("craftCrafterinaPriceLists") || "[]"
+    );
+
+  }catch(error){
+
+    return [];
+
+  }
+}
+
+function setSavedPriceLists(lists){
+
+  localStorage.setItem(
+    "craftCrafterinaPriceLists",
+    JSON.stringify(lists)
+  );
+
+}
+
+function getCurrentPriceListData(){
+
+  const rows =
+    document.querySelectorAll(".item-row");
+
+  const items=[];
+
+  rows.forEach(row=>{
+
+    const name =
+      row.querySelector(".name-input")
+        ?.value.trim() || "";
+
+    if(!name) return;
+
+    const chocolateSubmenu =
+      row.querySelector(".chocolate-submenu");
+
+    const photoFrameSubmenu =
+      row.querySelector(".photo-frame-submenu");
+
+    if(chocolateSubmenu){
+
+      const chocolates=[];
+
+      chocolateSubmenu
+        .querySelectorAll(".chocolate-entry")
+        .forEach(entry=>{
+
+          chocolates.push({
+
+            brand:
+              entry
+                .querySelector(".brand-input")
+                ?.value || "",
+
+            qty:
+              Number(
+                entry.querySelector(".qty-input")?.value
+              ) || 1,
+
+            unitPrice:
+              entry
+                .querySelector(".unit-price-input")
+                ?.value || ""
+
+          });
+
+        });
+
+      items.push({
+        name,
+        chocolate:true,
+        chocolates
+      });
+
+    }
+
+    else if(photoFrameSubmenu){
+
+      items.push({
+
+        name,
+
+        photoFrame:true,
+
+        frames:{
+          a4:
+            photoFrameSubmenu
+              .querySelector(
+                '[data-frame-size="a4"]'
+              )?.value || "",
+
+          a5:
+            photoFrameSubmenu
+              .querySelector(
+                '[data-frame-size="a5"]'
+              )?.value || "",
+
+          mini:
+            photoFrameSubmenu
+              .querySelector(
+                '[data-frame-size="mini"]'
+              )?.value || ""
+        }
+
+      });
+
+    }
+
+    else{
+
+      items.push({
+
+        name,
+
+        price:
+          row.querySelector(".price-input")
+            ?.value || "",
+
+        chocolate:false,
+        photoFrame:false
+
+      });
+
+    }
+
+  });
+
+  return {
+
+    hamperName:
+      document
+        .getElementById("hamperName")
+        .value || "",
+
+    delivery:
+      document
+        .getElementById("delivery")
+        .value || "260",
+
+    items
+
+  };
+
+}
+
+function savePriceList(){
+
+  let name =
+    document
+      .getElementById("saveListName")
+      .value.trim();
+
+  if(!name){
+
+    name =
+      document
+        .getElementById("hamperName")
+        .value.trim();
+
+  }
+
+  if(!name){
+
+    alert("Please enter a name for this price list.");
+
+    return;
+
+  }
+
+  const lists =
+    getSavedPriceLists();
+
+  const data =
+    getCurrentPriceListData();
+
+  data.id =
+    currentSavedListId ||
+    Date.now().toString();
+
+  data.name=name;
+
+  data.updatedAt =
+    new Date().toISOString();
+
+  const existingIndex =
+    lists.findIndex(
+      list=>list.id===data.id
+    );
+
+  if(existingIndex >= 0){
+
+    lists[existingIndex]=data;
+
+  }else{
+
+    lists.push(data);
+
+  }
+
+  setSavedPriceLists(lists);
+
+  currentSavedListId=data.id;
+
+  document.getElementById("saveListName")
+    .value=name;
+
+  renderSavedLists();
+
+  alert("Price list saved!");
+
+}
+
+function loadPriceList(id){
+
+  const lists =
+    getSavedPriceLists();
+
+  const saved =
+    lists.find(
+      list=>list.id===id
+    );
+
+  if(!saved) return;
+
+  document.getElementById("hamperName")
+    .value=saved.hamperName || "";
+
+  document.getElementById("delivery")
+    .value=saved.delivery ?? 260;
+
+  document.getElementById("saveListName")
+    .value=saved.name || "";
+
+  document.getElementById("items")
+    .innerHTML="";
+
+  itemCounter=0;
+
+  currentSavedListId=saved.id;
+
+  (saved.items || []).forEach(item=>{
+
+    addItem({
+      ...item,
+      chocolates:
+        item.chocolates
+          ? item.chocolates.map(chocolate=>({...chocolate}))
+          : undefined,
+      frames:
+        item.frames
+          ? {...item.frames}
+          : undefined
+    });
+
+  });
+
+  updatePreview();
+
+  window.scrollTo({
+    top:0,
+    behavior:"smooth"
+  });
+
+}
+
+function deleteSavedPriceList(id){
+
+  if(!confirm("Delete this saved price list?")) return;
+
+  const lists =
+    getSavedPriceLists()
+      .filter(list=>list.id!==id);
+
+  setSavedPriceLists(lists);
+
+  if(currentSavedListId===id){
+
+    currentSavedListId=null;
+
+    document.getElementById("saveListName")
+      .value="";
+
+  }
+
+  renderSavedLists();
+
+}
+
+function renderSavedLists(){
+
+  const container =
+    document.getElementById("savedLists");
+
+  const lists =
+    getSavedPriceLists();
+
+  if(!lists.length){
+
+    container.innerHTML=
+      `<div class="saved-empty">No saved price lists yet.</div>`;
+
+    return;
+
+  }
+
+  container.innerHTML=`
+
+    <div class="section-title">
+      Saved Price Lists
+    </div>
+
+    ${lists.map(list=>`
+
+      <div class="saved-list-item">
+
+        <button
+          class="saved-load-btn"
+          type="button"
+          onclick="loadPriceList('${escapeHtml(list.id)}')"
+        >
+          📋 ${escapeHtml(list.name)}
+        </button>
+
+        <button
+          class="saved-delete-btn"
+          type="button"
+          aria-label="Delete saved price list"
+          onclick="deleteSavedPriceList('${escapeHtml(list.id)}')"
+        >
+          ×
+        </button>
+
+      </div>
+
+    `).join("")}
+
+  `;
+
 }
 
 /* -------------------------------------------------------
@@ -2110,11 +2785,21 @@ function resetApp(){
   document.getElementById("hamperName").value="";
   document.getElementById("delivery").value=260;
   document.getElementById("items").innerHTML="";
+  document.getElementById("saveListName").value="";
 
   itemCounter=0;
+  currentSavedListId=null;
 
   defaultItems.forEach(item=>{
-    addItem({...item});
+    addItem({
+      ...item,
+      frames:item.frames
+        ? {...item.frames}
+        : undefined,
+      chocolates:item.chocolates
+        ? item.chocolates.map(chocolate=>({...chocolate}))
+        : undefined
+    });
   });
 
   updatePreview();
@@ -2125,11 +2810,20 @@ function resetApp(){
 ------------------------------------------------------- */
 
 defaultItems.forEach(item=>{
-  addItem({...item});
+  addItem({
+    ...item,
+    frames:item.frames
+      ? {...item.frames}
+      : undefined,
+    chocolates:item.chocolates
+      ? item.chocolates.map(chocolate=>({...chocolate}))
+      : undefined
+  });
 });
 
 updatePreview();
 updateGiftRecipientOptions();
+renderSavedLists();
 
 </script>
 
